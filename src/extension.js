@@ -1,8 +1,8 @@
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
 const vscode = require('vscode');
-const XMLFormatter = require('./xmlformatter');
-const JsonFormatter = require('./jsonformatter');
+const XFormatter = require('./utils/xformatter');
+const JFormatter = require('./utils/jformatter');
 
 //Build a range of the entire document!
 function getRange(document) {
@@ -29,8 +29,7 @@ function activate(context) {
 	console.log('Congratulations, your extension "vscode-plugin-example" is now active!');
 
 	// formatter instance
-	const xformatter = new XMLFormatter();
-	const jformatter = new JsonFormatter();
+	const formatters = [new JFormatter(), new XFormatter()]
 
 	// The command has been defined in the package.json file
 	// Now provide the implementation of the command with  registerCommand
@@ -40,28 +39,18 @@ function activate(context) {
 		let text = textEditor.document.getText().trim();
 		// console.log(text);
 
-		xformatter.update(text);
-		// vscode.window.setStatusBarMessage("xml" + (xformatter.isXML() == true));
-		if (xformatter.isXML() == true) {
-			// @ts-ignore
-			text = xformatter.format();
-			edit.replace(getRange(textEditor.document), text);
-			return;
-		}
-
-		jformatter.update(text);
-		// vscode.window.setStatusBarMessage("json" + (jformatter.isJSON() == true));
-		if (jformatter.isJSON() == true) {
-			// @ts-ignore
-			text = jformatter.format();
-			edit.replace(getRange(textEditor.document), text);
-			return;
+		for (const formatter of formatters) {
+			if (formatter.verify(text).shift()) {
+				text = formatter.format(text)
+				edit.replace(getRange(textEditor.document), text)
+				return
+			}
 		}
 	});
 
 	context.subscriptions.push(disposable);
 }
-exports.activate = activate;
+// exports.activate = activate;
 
 // this method is called when your extension is deactivated
 function deactivate() { }
@@ -70,3 +59,5 @@ module.exports = {
 	activate,
 	deactivate
 }
+
+// https://code.visualstudio.com/api/working-with-extensions/publishing-extension
